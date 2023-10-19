@@ -3,10 +3,7 @@ headless: true
 ---
 
 - [**Dry Lab Manual**]({{< relref "/docs/example" >}})
-- [Table of Contents]({{< relref "/docs/example/table-of-contents" >}})
-  - [With ToC]({{< relref "/docs/example/table-of-contents/with-toc" >}})
-  - [Without ToC]({{< relref "/docs/example/table-of-contents/without-toc" >}})
-- [Crash Course in R]({{relref "/docs/example/crash-course-in-r}})
+- [Crash Course in R]({{< relref "/docs/example/crash-course-in-r" >}})
 <br />
 
 - **Shortcodes**
