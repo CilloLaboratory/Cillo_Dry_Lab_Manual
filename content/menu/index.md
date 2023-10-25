@@ -3,7 +3,10 @@ headless: true
 ---
 
 - [**Dry Lab Manual**]({{< relref "/docs/example" >}})
-- [Crash Course in R]({{< relref "/docs/example/crash-course-in-r" >}})
+- [Test]({{< relref "/docs/shortcodes/crash_course_in_r" >}})
+- [First analysis in Seurat]({{< relref "/docs/example/first_analysis_seurat" >}})
+  - [Intro to Seurat]({{< relref "/docs/example/first_analysis_seurat/01" >}})
+  - [Analysis of a toy dataset]({{< relref "/docs/example/first_analysis_seurat/02" >}})
 <br />
 
 - **Shortcodes**
