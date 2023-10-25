@@ -1,13 +1,13 @@
 <!doctype html><html lang=en-us dir=ltr><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="Intro to scRNAseq analysis # This intro is will guide you through a very simple analysis of 2,700 peripheral blood mononuclear cells from a healthy donor. The full tutorial can be found here, but I have cherry-picked what I deem to be the most important components for our purposes.
 In general, the workflow follows these steps:
-Read in data Normalize count data for library size Find variable features Reduce dimensionality Find Clusters Plot UMAPs Find differentially expressed genes Identify cell types Downstream biological analyses Other analyses or modeling Background # These healthy donor cells were generated using 10X Genomics 3’-based single-cell RNAseq platform."><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:title" content><meta property="og:description" content><meta property="og:type" content="website"><meta property="og:url" content="https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/docs/dry_lab_manual/intro_to_seurat/a_first_analysis/"><title>A First Analysis | Cillo Lab: Dry Manual</title><link rel=manifest href=/Cillo_Dry_Lab_Manual/manifest.json><link rel=icon href=/Cillo_Dry_Lab_Manual/favicon.png><link rel=stylesheet href=/Cillo_Dry_Lab_Manual/book.min.33a48f5432973b8ff9a82679d9e45d67f2c15d4399bd2829269455cfe390b5e8.css integrity="sha256-M6SPVDKXO4/5qCZ52eRdZ/LBXUOZvSgpJpRVz+OQteg=" crossorigin=anonymous><script defer src=/Cillo_Dry_Lab_Manual/flexsearch.min.js></script>
-<script defer src=/Cillo_Dry_Lab_Manual/en.search.min.6fbfce67ce6c52e5ea90d0fd08d8f81824a66ced2c8d710829d5f9b00c10200e.js integrity="sha256-b7/OZ85sUuXqkND9CNj4GCSmbO0sjXEIKdX5sAwQIA4=" crossorigin=anonymous></script>
+Read in data Normalize count data for library size Find variable features Reduce dimensionality Find Clusters Plot UMAPs Find differentially expressed genes Identify cell types Downstream biological analyses Other analyses or modeling Background # These healthy donor cells were generated using 10X Genomics 3’-based single-cell RNAseq platform."><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:title" content><meta property="og:description" content><meta property="og:type" content="website"><meta property="og:url" content="https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/docs/dry_lab_manual/intro_to_seurat/a_first_analysis/"><title>A First Analysis | Cillo Lab: Dry Manual</title><link rel=manifest href=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/manifest.json><link rel=icon href=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/favicon.png><link rel=stylesheet href=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/book.min.33a48f5432973b8ff9a82679d9e45d67f2c15d4399bd2829269455cfe390b5e8.css integrity="sha256-M6SPVDKXO4/5qCZ52eRdZ/LBXUOZvSgpJpRVz+OQteg=" crossorigin=anonymous><script defer src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/flexsearch.min.js></script>
+<script defer src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/en.search.min.c69a78e820e138c43580e2e81d54d4af6074368b7765c679bb86d2caa217aa4a.js integrity="sha256-xpp46CDhOMQ1gOLoHVTUr2B0Not3ZcZ5u4bSyqIXqko=" crossorigin=anonymous></script>
 <link rel=alternate type=application/rss+xml href=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/docs/dry_lab_manual/intro_to_seurat/a_first_analysis/index.xml title="Cillo Lab: Dry Manual"></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
-<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/Cillo_Dry_Lab_Manual/><span>Cillo Lab: Dry Manual</span></a></h2><div class=book-search><input type=text id=book-search-input placeholder=Search aria-label=Search maxlength=64 data-hotkeys=s/><div class="book-search-spinner hidden"></div><ul id=book-search-results></ul></div><ul><li class=book-section-flat><a href=/Cillo_Dry_Lab_Manual/docs/dry_lab_manual/>Dry Lab Manual</a><ul><li><input type=checkbox id=section-567df018b484a054c54b827706775fee class=toggle>
-<label for=section-567df018b484a054c54b827706775fee class="flex justify-between"><a role=button>Crash Course in R</a></label><ul><li><a href=/Cillo_Dry_Lab_Manual/docs/dry_lab_manual/crash_course_in_r/r_for_data_science/>R for Data Science</a><ul></ul></li></ul></li><li><input type=checkbox id=section-c9bc43411d251daf2e319671d3824d5e class=toggle checked>
-<label for=section-c9bc43411d251daf2e319671d3824d5e class="flex justify-between"><a role=button>Intro to Seurat</a></label><ul><li><a href=/Cillo_Dry_Lab_Manual/docs/dry_lab_manual/intro_to_seurat/georges_seurat/>Georges Seurat</a><ul></ul></li><li><a href=/Cillo_Dry_Lab_Manual/docs/dry_lab_manual/intro_to_seurat/a_first_analysis/ class=active>A First Analysis</a><ul></ul></li></ul></li></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/Cillo_Dry_Lab_Manual/svg/menu.svg class=book-icon alt=Menu></label>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/><span>Cillo Lab: Dry Manual</span></a></h2><div class=book-search><input type=text id=book-search-input placeholder=Search aria-label=Search maxlength=64 data-hotkeys=s/><div class="book-search-spinner hidden"></div><ul id=book-search-results></ul></div><ul><li class=book-section-flat><a href=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/docs/dry_lab_manual/>Dry Lab Manual</a><ul><li><input type=checkbox id=section-567df018b484a054c54b827706775fee class=toggle>
+<label for=section-567df018b484a054c54b827706775fee class="flex justify-between"><a role=button>Crash Course in R</a></label><ul><li><a href=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/docs/dry_lab_manual/crash_course_in_r/r_for_data_science/>R for Data Science</a><ul></ul></li></ul></li><li><input type=checkbox id=section-c9bc43411d251daf2e319671d3824d5e class=toggle checked>
+<label for=section-c9bc43411d251daf2e319671d3824d5e class="flex justify-between"><a role=button>Intro to Seurat</a></label><ul><li><a href=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/docs/dry_lab_manual/intro_to_seurat/georges_seurat/>Georges Seurat</a><ul></ul></li><li><a href=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/docs/dry_lab_manual/intro_to_seurat/a_first_analysis/ class=active>A First Analysis</a><ul></ul></li></ul></li></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/svg/menu.svg class=book-icon alt=Menu></label>
 <strong>A First Analysis</strong>
-<label for=toc-control><img src=/Cillo_Dry_Lab_Manual/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#scale-data-and-reduce-dimensionality>Scale data and reduce dimensionality</a></li><li><a href=#check-out-reduced-dimensions-in-pca-space>Check out reduced dimensions in PCA space</a></li><li><a href=#cluster-cells>Cluster cells</a></li><li><a href=#create-umap-for-visualization>Create UMAP for visualization</a></li><li><a href=#evaluating-differentially-expressed-genes>Evaluating differentially expressed genes</a></li><li><a href=#identify-cell-types>Identify cell types</a></li><li><a href=#shortcuts>Shortcuts</a></li><li><a href=#saving-data>Saving data</a></li></ul></nav></aside></header><article class=markdown><p><img src=/seurat_banner.jpg alt=test></p><h1 id=intro-to-scrnaseq-analysis>Intro to scRNAseq analysis
+<label for=toc-control><img src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#scale-data-and-reduce-dimensionality>Scale data and reduce dimensionality</a></li><li><a href=#check-out-reduced-dimensions-in-pca-space>Check out reduced dimensions in PCA space</a></li><li><a href=#cluster-cells>Cluster cells</a></li><li><a href=#create-umap-for-visualization>Create UMAP for visualization</a></li><li><a href=#evaluating-differentially-expressed-genes>Evaluating differentially expressed genes</a></li><li><a href=#identify-cell-types>Identify cell types</a></li><li><a href=#shortcuts>Shortcuts</a></li><li><a href=#saving-data>Saving data</a></li></ul></nav></aside></header><article class=markdown><p><img src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/seurat_banner.jpg alt=test></p><h1 id=intro-to-scrnaseq-analysis>Intro to scRNAseq analysis
 <a class=anchor href=#intro-to-scrnaseq-analysis>#</a></h1><p>This intro is will guide you through a very simple analysis of 2,700
 peripheral blood mononuclear cells from a healthy donor. The full
 tutorial can be found
@@ -105,7 +105,7 @@ head(pbmc_ser@meta.data)
 
 # We can also plot values from metadata
 VlnPlot(pbmc_ser, features = c(&quot;nFeature_RNA&quot;, &quot;nCount_RNA&quot;, &quot;percent_mt&quot;), ncol = 3)
-</code></pre><p><img src=/qc_filtering-1.png alt></p><pre><code># We will filter to cells with greater than 200 genes and less than 2500 genes
+</code></pre><p><img src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/qc_filtering-1.png alt></p><pre><code># We will filter to cells with greater than 200 genes and less than 2500 genes
 # We will also exclude cells with greater than 5% MT reads
 pbmc_ser &lt;- subset(pbmc_ser, subset = nFeature_RNA &gt; 200 &amp; nFeature_RNA &lt; 2500 &amp; percent_mt &lt; 5)
 </code></pre><h1 id=normalization>Normalization
@@ -126,7 +126,7 @@ plot1 / plot2
 
 ## Warning: Transformation introduced infinite values in continuous x-axis
 ## Transformation introduced infinite values in continuous x-axis
-</code></pre><p><img src=/features-1.png alt></p><h2 id=scale-data-and-reduce-dimensionality>Scale data and reduce dimensionality
+</code></pre><p><img src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/features-1.png alt></p><h2 id=scale-data-and-reduce-dimensionality>Scale data and reduce dimensionality
 <a class=anchor href=#scale-data-and-reduce-dimensionality>#</a></h2><pre><code>pbmc_ser &lt;- ScaleData(pbmc_ser)
 
 ## Centering and scaling data matrix
@@ -188,10 +188,10 @@ pbmc_ser &lt;- RunPCA(pbmc_ser, features = VariableFeatures(object = pbmc_ser))
 ## Negative:  LTB, IL7R, CKB, VIM, MS4A7
 
 VizDimLoadings(pbmc_ser, dims = 1:2, reduction = &quot;pca&quot;)
-</code></pre><p><img src=/dim_red_explore-1.png alt></p><pre><code>DimPlot(pbmc_ser, reduction = &quot;pca&quot;)
-</code></pre><p><img src=/dim_red_explore-2.png alt></p><pre><code>DimHeatmap(pbmc_ser, dims = 1, cells = 500, balanced = TRUE)
-</code></pre><p><img src=/dim_red_explore-3.png alt></p><pre><code>ElbowPlot(pbmc_ser)
-</code></pre><p><img src=/dim_red_explore-4.png alt></p><h2 id=cluster-cells>Cluster cells
+</code></pre><p><img src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/dim_red_explore-1.png alt></p><pre><code>DimPlot(pbmc_ser, reduction = &quot;pca&quot;)
+</code></pre><p><img src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/dim_red_explore-2.png alt></p><pre><code>DimHeatmap(pbmc_ser, dims = 1, cells = 500, balanced = TRUE)
+</code></pre><p><img src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/dim_red_explore-3.png alt></p><pre><code>ElbowPlot(pbmc_ser)
+</code></pre><p><img src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/dim_red_explore-4.png alt></p><h2 id=cluster-cells>Cluster cells
 <a class=anchor href=#cluster-cells>#</a></h2><pre><code>pbmc_ser &lt;- FindNeighbors(pbmc_ser, dims = 1:7)
 
 ## Computing nearest neighbor graph
@@ -269,7 +269,7 @@ pbmc_ser &lt;- RunUMAP(pbmc_ser, dims = 1:7)
 ## 22:21:01 Optimization finished
 
 DimPlot(pbmc_ser, reduction = &quot;umap&quot;,label=T)
-</code></pre><p><img src=/umap-1.png alt></p><h2 id=evaluating-differentially-expressed-genes>Evaluating differentially expressed genes
+</code></pre><p><img src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/umap-1.png alt></p><h2 id=evaluating-differentially-expressed-genes>Evaluating differentially expressed genes
 <a class=anchor href=#evaluating-differentially-expressed-genes>#</a></h2><pre><code># find all markers of cluster 2
 cluster2_markers &lt;- FindMarkers(pbmc_ser, ident.1 = 2, min.pct = 0.25)
 head(cluster2_markers, n = 5)
@@ -350,9 +350,9 @@ pbmc_ser &lt;- ScaleData(pbmc_ser,features=top10$gene)
 ## Centering and scaling data matrix
 
 DoHeatmap(pbmc_ser, features = top10$gene) + NoLegend()
-</code></pre><p><img src=/degs-1.png alt></p><h2 id=identify-cell-types>Identify cell types
+</code></pre><p><img src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/degs-1.png alt></p><h2 id=identify-cell-types>Identify cell types
 <a class=anchor href=#identify-cell-types>#</a></h2><pre><code>FeaturePlot(pbmc_ser, features = c(&quot;MS4A1&quot;, &quot;GNLY&quot;, &quot;CD3E&quot;, &quot;CD14&quot;, &quot;FCER1A&quot;, &quot;FCGR3A&quot;, &quot;LYZ&quot;, &quot;PPBP&quot;,&quot;CD8A&quot;))
-</code></pre><p><img src=/cell_types-1.png alt></p><pre><code>pbmc_meta &lt;- pbmc_ser@meta.data %&gt;%
+</code></pre><p><img src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/cell_types-1.png alt></p><pre><code>pbmc_meta &lt;- pbmc_ser@meta.data %&gt;%
     mutate(cell_types=RNA_snn_res.0.3) %&gt;%
     mutate(cell_types=recode(cell_types,
         `0` = &quot;Naive CD4 Tconv&quot;,
@@ -397,7 +397,7 @@ pbmc_meta %&gt;%
 pbmc_ser[[&quot;cell_types&quot;]] &lt;- pbmc_meta$cell_types
 
 DimPlot(pbmc_ser, group.by=&quot;cell_types&quot;, reduction = &quot;umap&quot;, label = TRUE, pt.size = 0.5) + NoLegend()
-</code></pre><p><img src=/cell_types-2.png alt></p><h2 id=shortcuts>Shortcuts
+</code></pre><p><img src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/cell_types-2.png alt></p><h2 id=shortcuts>Shortcuts
 <a class=anchor href=#shortcuts>#</a></h2><p>With the use of piping, we could have down much of this analysis in a
 few lines of code, as shown below.</p><pre><code>pbmc_ser_quick &lt;- CreateSeuratObject(counts=pbmc_data,project=&quot;pbmc3k&quot;,min.cells=3,min.features=200) 
 
@@ -452,7 +452,7 @@ pbmc_ser_quick &lt;- pbmc_ser_quick %&gt;%
 ##     FAM110A, ATP1A1, TRADD, PPA1, CCDC109B, ABRACL, CTD-2006K23.1, WARS, VMO1, FYB
 
 ElbowPlot(pbmc_ser_quick)
-</code></pre><p><img src=/piping-1.png alt></p><pre><code>pbmc_ser_quick &lt;- pbmc_ser_quick %&gt;%
+</code></pre><p><img src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/piping-1.png alt></p><pre><code>pbmc_ser_quick &lt;- pbmc_ser_quick %&gt;%
     RunUMAP(.,dims=1:7) %&gt;%
     FindNeighbors(.,dims=1:7) %&gt;%
     FindClusters(.,res=c(0.3,0.5,0.7))
@@ -511,6 +511,6 @@ ElbowPlot(pbmc_ser_quick)
 Idents(pbmc_ser_quick) &lt;- &quot;RNA_snn_res.0.3&quot;
 
 DimPlot(pbmc_ser_quick,group.by=&quot;RNA_snn_res.0.3&quot;,label=T)
-</code></pre><p><img src=/piping-2.png alt></p><h2 id=saving-data>Saving data
+</code></pre><p><img src=https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/piping-2.png alt></p><h2 id=saving-data>Saving data
 <a class=anchor href=#saving-data>#</a></h2><pre><code># saveRDS(pbmc_ser,file=&quot;pbmc3k_vignette_final_output_231024.rds&quot;)
 </code></pre></article><footer class=book-footer><div class="flex flex-wrap justify-between"></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#scale-data-and-reduce-dimensionality>Scale data and reduce dimensionality</a></li><li><a href=#check-out-reduced-dimensions-in-pca-space>Check out reduced dimensions in PCA space</a></li><li><a href=#cluster-cells>Cluster cells</a></li><li><a href=#create-umap-for-visualization>Create UMAP for visualization</a></li><li><a href=#evaluating-differentially-expressed-genes>Evaluating differentially expressed genes</a></li><li><a href=#identify-cell-types>Identify cell types</a></li><li><a href=#shortcuts>Shortcuts</a></li><li><a href=#saving-data>Saving data</a></li></ul></nav></div></aside></main></body></html>
