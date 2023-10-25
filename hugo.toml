@@ -2,4 +2,5 @@ baseURL = 'https://cillolaboratory.github.io/Cillo_Dry_Lab_Manual/'
 languageCode = 'en-us'
 title = 'Cillo Lab: Dry Manual'
 theme = 'hugo-book'
+canonifyURLs = true
 # BookMenuBundle = '/menu'
