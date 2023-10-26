@@ -1,0 +1,210 @@
+---
+title: "Downloading Public Datasets with GEO"
+output: md_document
+date: "2023-10-25"
+---
+
+# Download data programmatically
+
+Whenever a paper is published, genomic data almost also must be made publicly avaialble through an online repository. There are several commonly used ones, but perhaps the most ubiquitious one is the [Gene Expression Omnibus](https://www.ncbi.nlm.nih.gov/geo/), or simply GEO. Data are assigned accession number that are often found in the "data availability" section of published papers. These accession numbers lead you to where the processed data are stored on GEO. (As an aside, the raw sequencing data tied to this accession number as well, but the raw data are stored in the Sequence Read Archive, which is beyond the scope of this tutorial.) 
+
+As an example, the accession number [GSE139324](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE139324) takes you to the page where the processed scRNAseq data are stored for our 2020 Immunity paper. 
+
+If you go down to the *Samples* section, and click on eg [GSM4138110](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM4138110), it will take you to a description of that sample and links to download the files individually. So, to look at these data in Seurat, you'd have to:
+
+- Download these 3 files
+    - GSM4138110_HNSCC_1_PBMC_barcodes.tsv.gz
+    - GSM4138110_HNSCC_1_PBMC_genes.tsv.gz	
+    - GSM4138110_HNSCC_1_PBMC_matrix.mtx.gz	
+- Put them into a folder 
+- Read them into Seruat
+
+Not too bad, right? It's fine for a couple of samples, but if you want to download all 63 samples from this study it gets tedious quickly. 
+
+Instead, we can write a function and use the Bioconductor R package [GEOquery](https://bioconductor.org/packages/release/bioc/html/GEOquery.html).
+
+
+# Prerequisites 
+
+To run this tutorial, we assume the following:
+
+- You have downloaded and installed the GEOquery and Biobase packages through Bioconductor.
+- You have some familiarity with the concept of writing functions
+    - For a refresher on writing function, [check this out](https://r4ds.hadley.nz/functions#introduction) from R for Data Science.
+
+# Load packages 
+
+First, we will load the necessary packages.
+
+```{r load_packages, echo=FALSE}
+
+library(GEOquery)
+library(Biobase)
+library(dplyr)
+
+```
+
+# Identify samples and metadata from an accession number 
+
+Here, we will gain some familiarity with the data structures that we can pull from GEO and how we can download samples using this information.
+
+```{r accession}
+
+gds_use <- GEOquery::getGEO("GSE139324")
+
+gds_use
+class(gds_use) # list
+
+class(gds_use[[1]]) # first item in the list 
+slotNames(gds_use[[1]]) # all the containers for the data in this S4 object
+
+```
+
+Let's unpack what we're seeing in the ExpressionSet object. 
+
+We have 7 slots that ostensibly are holding some sorts of data. But we can see that assayData has 0 features so is probably not helpful. We can also see that protocolData has nothing in it and neither does featureData. 
+
+There are some other things here, but it looks like all the goodies are in the phenoData slot. 
+
+# Explore the phenoData
+
+```{r phenodata}
+
+gds_use[[1]]@phenoData # using the "@" to access slots in the ExpressionSet
+class(gds_use[[1]]@phenoData) # AnnotatedDataFrame
+
+# Looks like individual sample accessions are under sampleNames
+# varLabels has 44 different pieces of data
+
+gds_use[[1]]@phenoData@data %>%
+  glimpse()
+
+```
+
+There is a lot of info here, but what eventually becomes clear is the following:
+- There's lots of useful metadata here for each sample
+- There are ftp links to supplementary files (in this case, the 3 we need for scRNAseq) that we can download
+
+# Write a function to download data from GEO
+
+We will now build a function that uses the info we can get from the ExpressionSet phenoData to download a few samples from this study. 
+
+```{r geo_function}
+
+geo_download <- function(target_directory,geo_accession,samples_to_download) {
+
+    # Check whether the files are already present in the target_directory
+    file_names <- list.files(target_directory)
+    num_samples_present <- length(which(samples_to_download %in% file_names))
+
+    if (num_samples_present==length(samples_to_download)) {
+
+        print(
+          "All samples already present!"
+        )
+
+    } else if (num_samples_present>0) {
+      
+       print(paste(
+            "There are ",
+            num_samples_present,
+            " of ",
+            length(samples_to_download),
+            " already here!",
+            sep=""
+        )
+        )
+      
+      sub_samples_to_download <- setdiff(samples_to_download,file_names)
+
+      # Identify samples from GEO
+      gds <- GEOquery::getGEO(geo_accession)
+      data_use <- Biobase::phenoData(gds[[1]])@data[Biobase::phenoData(gds[[1]])@data$title %in% sub_samples_to_download,]
+
+        # Create subdirectories and download from GEO
+        for (i in 1:nrow(data_use)) {
+    
+            dir_name <- paste(target_directory,data_use$title[i],sep="/")
+            dir.create(dir_name)
+
+            tmp_dwnload1 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[1]])
+            tmp_dwnload2 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[2]])
+            tmp_dwnload3 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[3]])
+
+            download.file(tmp_dwnload1,destfile=paste(dir_name,"barcodes.tsv.gz",sep="/"))
+            download.file(tmp_dwnload2,destfile=paste(dir_name,"features.tsv.gz",sep="/"))
+            download.file(tmp_dwnload3,destfile=paste(dir_name,"matrix.mtx.gz",sep="/"))
+        }
+
+    } else {
+
+        # Identify samples from GEO
+        gds <- GEOquery::getGEO(geo_accession)
+        data_use <- Biobase::phenoData(gds[[1]])@data[Biobase::phenoData(gds[[1]])@data$title %in% samples_to_download,]
+
+        # Create subdirectories and download from GEO
+        for (i in 1:nrow(data_use)) {
+    
+            dir_name <- paste(target_directory,data_use$title[i],sep="/")
+            dir.create(dir_name)
+
+            tmp_dwnload1 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[1]])
+            tmp_dwnload2 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[2]])
+            tmp_dwnload3 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[3]])
+
+            download.file(tmp_dwnload1,destfile=paste(dir_name,"barcodes.tsv.gz",sep="/"))
+            download.file(tmp_dwnload2,destfile=paste(dir_name,"features.tsv.gz",sep="/"))
+            download.file(tmp_dwnload3,destfile=paste(dir_name,"matrix.mtx.gz",sep="/"))
+        }
+      
+    }
+
+}
+
+```
+
+## Try out the function 
+
+Running this function for the first time will download the data in the proper structure for it to be read directly into Seurat. 
+
+Attempting to run the function a section time will tell you that you've already downloaded the data! 
+
+```{r attempt_download}
+
+geo_download(target_directory="~/Desktop/geo_download_test",
+    geo_accession="GSE139324",
+    samples_to_download=c("HD_PBMC_1","HD_PBMC_2","HD_PBMC_3")
+    )
+
+# Will tell you all samples are already here 
+geo_download(target_directory="~/Desktop/geo_download_test",
+    geo_accession="GSE139324",
+    samples_to_download=c("HD_PBMC_1","HD_PBMC_2","HD_PBMC_3")
+    )
+
+# Will tell you 3 of 4 are already here
+# And will download the missing file 
+geo_download(target_directory="~/Desktop/geo_download_test",
+    geo_accession="GSE139324",
+    samples_to_download=c("HD_PBMC_1","HD_PBMC_2","HD_PBMC_3","HD_PBMC_4")
+    )
+
+```
+
+## Save the metadata 
+
+Let's also save the metadata. It will be helpful for including some of these pieces in Seurat when/if we analyze these samples.
+
+```{r save_meta}
+
+metadata_to_save <- gds_use[[1]]@phenoData@data %>%
+  as_tibble(.,rownames="sample_accession")
+
+readr::write_tsv(metadata_to_save,
+                 file="~/Desktop/geo_download_test/GSE139324_metadata.tsv")
+
+```
+
+## Conclusions
+
+Here, we've gained some familiarity with programmatically downloading data from GEO. This will be helpful for analysis of publicly available data! 
