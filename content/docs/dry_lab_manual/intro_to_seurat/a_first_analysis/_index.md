@@ -153,6 +153,7 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
     # Check out metadata now
     head(pbmc_ser@meta.data)
 
+```tpl
     ##                  orig.ident nCount_RNA nFeature_RNA percent_mt
     ## AAACATACAACCAC-1     pbmc3k       2419          779  3.0177759
     ## AAACATTGAGCTAC-1     pbmc3k       4903         1352  3.7935958
@@ -160,7 +161,7 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
     ## AAACCGTGCTTCCG-1     pbmc3k       2639          960  1.7430845
     ## AAACCGTGTATGCG-1     pbmc3k        980          521  1.2244898
     ## AAACGCACTGGTAC-1     pbmc3k       2163          781  1.6643551
-
+```
     # We can also plot values from metadata
     VlnPlot(pbmc_ser, features = c("nFeature_RNA", "nCount_RNA", "percent_mt"), ncol = 3)
 
@@ -189,8 +190,10 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
 
     plot1 / plot2
 
+```tpl
     ## Warning: Transformation introduced infinite values in continuous x-axis
     ## Transformation introduced infinite values in continuous x-axis
+```
 
 ![](/features-1.png)
 
@@ -202,6 +205,7 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
 
     pbmc_ser <- RunPCA(pbmc_ser, features = VariableFeatures(object = pbmc_ser))
 
+```tpl
     ## PC_ 1 
     ## Positive:  CST3, TYROBP, LST1, AIF1, FTL, FTH1, LYZ, FCN1, S100A9, TYMP 
     ##     FCER1G, CFD, LGALS1, S100A8, CTSS, LGALS2, SERPINA1, IFITM3, SPI1, CFP 
@@ -237,11 +241,13 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
     ## Negative:  LTB, IL7R, CKB, VIM, MS4A7, AQP3, CYTIP, RP11-290F20.3, SIGLEC10, HMOX1 
     ##     LILRB2, PTGES3, MAL, CD27, HN1, CD2, GDI2, CORO1B, ANXA5, TUBA1B 
     ##     FAM110A, ATP1A1, TRADD, PPA1, CCDC109B, ABRACL, CTD-2006K23.1, WARS, VMO1, FYB
+```
 
 ## Check out reduced dimensions in PCA space
 
     print(pbmc_ser[["pca"]], dims = 1:5, nfeatures = 5)
 
+```tpl
     ## PC_ 1 
     ## Positive:  CST3, TYROBP, LST1, AIF1, FTL 
     ## Negative:  MALAT1, LTB, IL32, IL7R, CD2 
@@ -257,6 +263,7 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
     ## PC_ 5 
     ## Positive:  GZMB, NKG7, S100A8, FGFBP2, GNLY 
     ## Negative:  LTB, IL7R, CKB, VIM, MS4A7
+```
 
     VizDimLoadings(pbmc_ser, dims = 1:2, reduction = "pca")
 
@@ -278,6 +285,7 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
 
     pbmc_ser <- FindNeighbors(pbmc_ser, dims = 1:7)
 
+```tpl
     ## Computing nearest neighbor graph
 
     ## Computing SNN
@@ -311,9 +319,10 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
     ## Maximum modularity in 10 random starts: 0.8576
     ## Number of communities: 11
     ## Elapsed time: 0 seconds
-
+```
     dplyr::glimpse(pbmc_ser@meta.data)
 
+```tpl
     ## Rows: 2,638
     ## Columns: 8
     ## $ orig.ident      <fct> pbmc3k, pbmc3k, pbmc3k, pbmc3k, pbmc3k, pbmc3k, pbmc3k…
@@ -324,6 +333,7 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
     ## $ RNA_snn_res.0.5 <fct> 1, 2, 1, 4, 7, 1, 3, 3, 3, 6, 2, 0, 0, 4, 3, 0, 4, 1, …
     ## $ RNA_snn_res.0.7 <fct> 5, 2, 1, 4, 8, 1, 3, 3, 5, 7, 2, 0, 0, 4, 5, 5, 4, 1, …
     ## $ seurat_clusters <fct> 5, 2, 1, 4, 8, 1, 3, 3, 5, 7, 2, 0, 0, 4, 5, 5, 4, 1, …
+```
 
     Idents(pbmc_ser) <- "RNA_snn_res.0.3"
 
@@ -333,6 +343,7 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
 
     pbmc_ser <- RunUMAP(pbmc_ser, dims = 1:7)
 
+```tpl
     ## 22:20:58 UMAP embedding parameters a = 0.9922 b = 1.112
 
     ## 22:20:58 Read 2638 rows and found 7 numeric columns
@@ -353,6 +364,7 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
     ## 22:20:59 Initializing from normalized Laplacian + noise (using irlba)
     ## 22:20:59 Commencing optimization for 500 epochs, with 102208 positive edges
     ## 22:21:01 Optimization finished
+```
 
     DimPlot(pbmc_ser, reduction = "umap",label=T)
 
@@ -364,27 +376,31 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
     cluster2_markers <- FindMarkers(pbmc_ser, ident.1 = 2, min.pct = 0.25)
     head(cluster2_markers, n = 5)
 
+```tpl
     ##             p_val avg_log2FC pct.1 pct.2    p_val_adj
     ## IL32 1.400312e-82  1.2326710 0.960 0.480 1.920389e-78
     ## LTB  9.486821e-76  1.2798994 0.982 0.654 1.301023e-71
     ## AQP3 1.191119e-59  1.3174581 0.451 0.117 1.633501e-55
     ## IL7R 5.609743e-57  1.1300879 0.759 0.339 7.693202e-53
     ## CD3D 1.279636e-56  0.8208297 0.920 0.449 1.754893e-52
-
+```
     # find all markers distinguishing cluster 5 from clusters 0 and 3
     cluster5_markers <- FindMarkers(pbmc_ser, ident.1 = 5, ident.2 = c(0, 3), min.pct = 0.25)
     head(cluster5_markers, n = 5)
 
+```tpl
     ##                       p_val avg_log2FC pct.1 pct.2     p_val_adj
     ## FCGR3A        2.497558e-219   4.272442 0.975 0.038 3.425151e-215
     ## IFITM3        3.174718e-210   3.892867 0.975 0.045 4.353808e-206
     ## CFD           2.902241e-205   3.407246 0.938 0.038 3.980133e-201
     ## CD68          9.447858e-205   3.024369 0.926 0.034 1.295679e-200
     ## RP11-290F20.3 3.102169e-202   2.728929 0.840 0.015 4.254314e-198
+```
 
     # find markers for every cluster compared to all remaining cells, report only the positive ones
     pbmc_markers <- FindAllMarkers(pbmc_ser, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
 
+```tpl
     ## Calculating cluster 0
 
     ## Calculating cluster 1
@@ -403,10 +419,12 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
 
     ## Calculating cluster 8
 
+```
     pbmc_markers %>%
         group_by(cluster) %>%
         slice_max(n = 2, order_by = avg_log2FC)
 
+```tpl
     ## # A tibble: 18 × 7
     ## # Groups:   cluster [9]
     ##        p_val avg_log2FC pct.1 pct.2 p_val_adj cluster gene    
@@ -429,6 +447,7 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
     ## 16 2.41e- 19       2.86 1     0.513 3.31e- 15 7       HLA-DPB1
     ## 17 3.68e-110       8.58 1     0.024 5.05e-106 8       PPBP    
     ## 18 7.73e-200       7.24 1     0.01  1.06e-195 8       PF4
+```
 
     # Heatmap of top DEGs across clusters 
     pbmc_markers %>%
@@ -437,7 +456,9 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
 
     pbmc_ser <- ScaleData(pbmc_ser,features=top10$gene)
 
+```tpl
     ## Centering and scaling data matrix
+```
 
     DoHeatmap(pbmc_ser, features = top10$gene) + NoLegend()
 
@@ -468,6 +489,7 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
         select(RNA_snn_res.0.3,cell_types) %>%
         table()
 
+```tpl
     ##                cell_types
     ## RNA_snn_res.0.3 Naive CD4 Tconv CD14 monocytes Mem CD4 Tconv B cells
     ##               0             781              0             0       0
@@ -490,6 +512,7 @@ Note that mitochondrial genes can be identified as starting with “MT-”.
     ##               6           0              0      143   0         0
     ##               7           0              0        0  29         0
     ##               8           0              0        0   0        14
+```
 
     pbmc_ser[["cell_types"]] <- pbmc_meta$cell_types
 
@@ -504,9 +527,10 @@ few lines of code, as shown below.
 
     pbmc_ser_quick <- CreateSeuratObject(counts=pbmc_data,project="pbmc3k",min.cells=3,min.features=200) 
 
+```tpl
     ## Warning: Feature names cannot have underscores ('_'), replacing with dashes
     ## ('-')
-
+```
     pbmc_ser_quick[["percent_mt"]] <- PercentageFeatureSet(pbmc_ser_quick, pattern = "^MT-")
 
     pbmc_ser_quick <- pbmc_ser_quick %>% 
@@ -516,6 +540,7 @@ few lines of code, as shown below.
         ScaleData(.) %>%
         RunPCA(.) 
 
+```tpl
     ## Centering and scaling data matrix
 
     ## PC_ 1 
@@ -553,7 +578,7 @@ few lines of code, as shown below.
     ## Negative:  LTB, IL7R, CKB, VIM, MS4A7, AQP3, CYTIP, RP11-290F20.3, SIGLEC10, HMOX1 
     ##     LILRB2, PTGES3, MAL, CD27, HN1, CD2, GDI2, CORO1B, ANXA5, TUBA1B 
     ##     FAM110A, ATP1A1, TRADD, PPA1, CCDC109B, ABRACL, CTD-2006K23.1, WARS, VMO1, FYB
-
+```
     ElbowPlot(pbmc_ser_quick)
 
 ![](/piping-1.png)
@@ -563,6 +588,7 @@ few lines of code, as shown below.
         FindNeighbors(.,dims=1:7) %>%
         FindClusters(.,res=c(0.3,0.5,0.7))
 
+```tpl
     ## 22:21:16 UMAP embedding parameters a = 0.9922 b = 1.112
 
     ## 22:21:16 Read 2638 rows and found 7 numeric columns
@@ -613,6 +639,8 @@ few lines of code, as shown below.
     ## Maximum modularity in 10 random starts: 0.8576
     ## Number of communities: 11
     ## Elapsed time: 0 seconds
+
+```tpl
 
     Idents(pbmc_ser_quick) <- "RNA_snn_res.0.3"
 
