@@ -36,7 +36,7 @@ To run this tutorial, we assume the following:
 
 First, we will load the necessary packages.
 
-```{r load_packages, echo=FALSE}
+```{r load_packages}
 
 library(GEOquery)
 library(Biobase)
@@ -93,6 +93,9 @@ We will now build a function that uses the info we can get from the ExpressionSe
 
 geo_download <- function(target_directory,geo_accession,samples_to_download) {
 
+    # Call query to GEO
+    gds <- GEOquery::getGEO(geo_accession)
+
     # Check whether the files are already present in the target_directory
     file_names <- list.files(target_directory)
     num_samples_present <- length(which(samples_to_download %in% file_names))
@@ -118,7 +121,6 @@ geo_download <- function(target_directory,geo_accession,samples_to_download) {
       sub_samples_to_download <- setdiff(samples_to_download,file_names)
 
       # Identify samples from GEO
-      gds <- GEOquery::getGEO(geo_accession)
       data_use <- Biobase::phenoData(gds[[1]])@data[Biobase::phenoData(gds[[1]])@data$title %in% sub_samples_to_download,]
 
         # Create subdirectories and download from GEO
@@ -131,15 +133,14 @@ geo_download <- function(target_directory,geo_accession,samples_to_download) {
             tmp_dwnload2 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[2]])
             tmp_dwnload3 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[3]])
 
-            download.file(tmp_dwnload1,destfile=paste(dir_name,"barcodes.tsv.gz",sep="/"))
-            download.file(tmp_dwnload2,destfile=paste(dir_name,"features.tsv.gz",sep="/"))
-            download.file(tmp_dwnload3,destfile=paste(dir_name,"matrix.mtx.gz",sep="/"))
+            download.file(tmp_dwnload1,cacheOK = FALSE,destfile=paste(dir_name,"barcodes.tsv.gz",sep="/"))
+            download.file(tmp_dwnload2,cacheOK = FALSE,destfile=paste(dir_name,"features.tsv.gz",sep="/"))
+            download.file(tmp_dwnload3,cacheOK = FALSE,destfile=paste(dir_name,"matrix.mtx.gz",sep="/"))
         }
 
     } else {
 
         # Identify samples from GEO
-        gds <- GEOquery::getGEO(geo_accession)
         data_use <- Biobase::phenoData(gds[[1]])@data[Biobase::phenoData(gds[[1]])@data$title %in% samples_to_download,]
 
         # Create subdirectories and download from GEO
@@ -152,9 +153,9 @@ geo_download <- function(target_directory,geo_accession,samples_to_download) {
             tmp_dwnload2 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[2]])
             tmp_dwnload3 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[3]])
 
-            download.file(tmp_dwnload1,destfile=paste(dir_name,"barcodes.tsv.gz",sep="/"))
-            download.file(tmp_dwnload2,destfile=paste(dir_name,"features.tsv.gz",sep="/"))
-            download.file(tmp_dwnload3,destfile=paste(dir_name,"matrix.mtx.gz",sep="/"))
+            download.file(tmp_dwnload1,cacheOK = FALSE,destfile=paste(dir_name,"barcodes.tsv.gz",sep="/"))
+            download.file(tmp_dwnload2,cacheOK = FALSE,destfile=paste(dir_name,"features.tsv.gz",sep="/"))
+            download.file(tmp_dwnload3,cacheOK = FALSE,destfile=paste(dir_name,"matrix.mtx.gz",sep="/"))
         }
       
     }

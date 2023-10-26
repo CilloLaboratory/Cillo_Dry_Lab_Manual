@@ -50,6 +50,8 @@ To run this tutorial, we assume the following:
 
 First, we will load the necessary packages.
 
+    library(GEOquery)
+
     ## Loading required package: Biobase
 
     ## Loading required package: BiocGenerics
@@ -79,6 +81,9 @@ First, we will load the necessary packages.
     ## Setting options('download.file.method.GEOquery'='auto')
 
     ## Setting options('GEOquery.inmemory.gpl'=FALSE)
+
+    library(Biobase)
+    library(dplyr)
 
     ## 
     ## Attaching package: 'dplyr'
@@ -233,6 +238,9 @@ ExpressionSet phenoData to download a few samples from this study.
 
     geo_download <- function(target_directory,geo_accession,samples_to_download) {
 
+        # Call query to GEO
+        gds <- GEOquery::getGEO(geo_accession)
+
         # Check whether the files are already present in the target_directory
         file_names <- list.files(target_directory)
         num_samples_present <- length(which(samples_to_download %in% file_names))
@@ -258,7 +266,6 @@ ExpressionSet phenoData to download a few samples from this study.
           sub_samples_to_download <- setdiff(samples_to_download,file_names)
 
           # Identify samples from GEO
-          gds <- GEOquery::getGEO(geo_accession)
           data_use <- Biobase::phenoData(gds[[1]])@data[Biobase::phenoData(gds[[1]])@data$title %in% sub_samples_to_download,]
 
             # Create subdirectories and download from GEO
@@ -271,15 +278,14 @@ ExpressionSet phenoData to download a few samples from this study.
                 tmp_dwnload2 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[2]])
                 tmp_dwnload3 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[3]])
 
-                download.file(tmp_dwnload1,destfile=paste(dir_name,"barcodes.tsv.gz",sep="/"))
-                download.file(tmp_dwnload2,destfile=paste(dir_name,"features.tsv.gz",sep="/"))
-                download.file(tmp_dwnload3,destfile=paste(dir_name,"matrix.mtx.gz",sep="/"))
+                download.file(tmp_dwnload1,cacheOK = FALSE,destfile=paste(dir_name,"barcodes.tsv.gz",sep="/"))
+                download.file(tmp_dwnload2,cacheOK = FALSE,destfile=paste(dir_name,"features.tsv.gz",sep="/"))
+                download.file(tmp_dwnload3,cacheOK = FALSE,destfile=paste(dir_name,"matrix.mtx.gz",sep="/"))
             }
 
         } else {
 
             # Identify samples from GEO
-            gds <- GEOquery::getGEO(geo_accession)
             data_use <- Biobase::phenoData(gds[[1]])@data[Biobase::phenoData(gds[[1]])@data$title %in% samples_to_download,]
 
             # Create subdirectories and download from GEO
@@ -292,9 +298,9 @@ ExpressionSet phenoData to download a few samples from this study.
                 tmp_dwnload2 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[2]])
                 tmp_dwnload3 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[3]])
 
-                download.file(tmp_dwnload1,destfile=paste(dir_name,"barcodes.tsv.gz",sep="/"))
-                download.file(tmp_dwnload2,destfile=paste(dir_name,"features.tsv.gz",sep="/"))
-                download.file(tmp_dwnload3,destfile=paste(dir_name,"matrix.mtx.gz",sep="/"))
+                download.file(tmp_dwnload1,cacheOK = FALSE,destfile=paste(dir_name,"barcodes.tsv.gz",sep="/"))
+                download.file(tmp_dwnload2,cacheOK = FALSE,destfile=paste(dir_name,"features.tsv.gz",sep="/"))
+                download.file(tmp_dwnload3,cacheOK = FALSE,destfile=paste(dir_name,"matrix.mtx.gz",sep="/"))
             }
           
         }
@@ -314,6 +320,15 @@ already downloaded the data!
         samples_to_download=c("HD_PBMC_1","HD_PBMC_2","HD_PBMC_3")
         )
 
+    ## Found 1 file(s)
+
+    ## GSE139324_series_matrix.txt.gz
+
+    ## Using locally cached version: /var/folders/1w/32zp8ffj6q50nny8nt6y1bvc0000gq/T//RtmpBGdiNR/GSE139324_series_matrix.txt.gz
+
+    ## Using locally cached version of GPL18573 found here:
+    ## /var/folders/1w/32zp8ffj6q50nny8nt6y1bvc0000gq/T//RtmpBGdiNR/GPL18573.soft.gz
+
     ## [1] "All samples already present!"
 
     # Will tell you all samples are already here 
@@ -321,6 +336,15 @@ already downloaded the data!
         geo_accession="GSE139324",
         samples_to_download=c("HD_PBMC_1","HD_PBMC_2","HD_PBMC_3")
         )
+
+    ## Found 1 file(s)
+
+    ## GSE139324_series_matrix.txt.gz
+
+    ## Using locally cached version: /var/folders/1w/32zp8ffj6q50nny8nt6y1bvc0000gq/T//RtmpBGdiNR/GSE139324_series_matrix.txt.gz
+
+    ## Using locally cached version of GPL18573 found here:
+    ## /var/folders/1w/32zp8ffj6q50nny8nt6y1bvc0000gq/T//RtmpBGdiNR/GPL18573.soft.gz
 
     ## [1] "All samples already present!"
 
@@ -330,6 +354,15 @@ already downloaded the data!
         geo_accession="GSE139324",
         samples_to_download=c("HD_PBMC_1","HD_PBMC_2","HD_PBMC_3","HD_PBMC_4")
         )
+
+    ## Found 1 file(s)
+
+    ## GSE139324_series_matrix.txt.gz
+
+    ## Using locally cached version: /var/folders/1w/32zp8ffj6q50nny8nt6y1bvc0000gq/T//RtmpBGdiNR/GSE139324_series_matrix.txt.gz
+
+    ## Using locally cached version of GPL18573 found here:
+    ## /var/folders/1w/32zp8ffj6q50nny8nt6y1bvc0000gq/T//RtmpBGdiNR/GPL18573.soft.gz
 
     ## [1] "All samples already present!"
 

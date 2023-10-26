@@ -50,6 +50,8 @@ To run this tutorial, we assume the following:
 
 First, we will load the necessary packages.
 
+    library(GEOquery)
+
 ```tpl
     ## Loading required package: Biobase
 
@@ -80,7 +82,12 @@ First, we will load the necessary packages.
     ## Setting options('download.file.method.GEOquery'='auto')
 
     ## Setting options('GEOquery.inmemory.gpl'=FALSE)
+```
 
+    library(Biobase)
+    library(dplyr)
+
+```tpl
     ## 
     ## Attaching package: 'dplyr'
 
@@ -100,7 +107,6 @@ First, we will load the necessary packages.
     ## 
     ##     intersect, setdiff, setequal, union
 ```
-
 # Identify samples and metadata from an accession number
 
 Here, we will gain some familiarity with the data structures that we can
@@ -112,9 +118,10 @@ pull from GEO and how we can download samples using this information.
     ## Found 1 file(s)
 
     ## GSE139324_series_matrix.txt.gz
-
+```
     gds_use
 
+```tpl
     ## $GSE139324_series_matrix.txt.gz
     ## ExpressionSet (storageMode: lockedEnvironment)
     ## assayData: 0 features, 63 samples 
@@ -131,26 +138,21 @@ pull from GEO and how we can download samples using this information.
     ## Annotation: GPL18573
 ```
     class(gds_use) # list
-
 ```tpl
     ## [1] "list"
 ```
-   
-     class(gds_use[[1]]) # first item in the list 
-
+    class(gds_use[[1]]) # first item in the list 
 ```tpl
     ## [1] "ExpressionSet"
     ## attr(,"package")
     ## [1] "Biobase"
 ```
     slotNames(gds_use[[1]]) # all the containers for the data in this S4 object
-
 ```tpl
     ## [1] "experimentData"    "assayData"         "phenoData"        
     ## [4] "featureData"       "annotation"        "protocolData"     
     ## [7] ".__classVersion__"
 ```
-
 Let’s unpack what we’re seeing in the ExpressionSet object.
 
 We have 7 slots that ostensibly are holding some sorts of data. But we
@@ -183,7 +185,6 @@ in the phenoData slot.
 
     gds_use[[1]]@phenoData@data %>%
       glimpse()
-
 ```tpl
     ## Rows: 63
     ## Columns: 44
@@ -232,7 +233,6 @@ in the phenoData slot.
     ## $ `hpv_status:ch1`          <chr> "HPV_negative", "HPV_negative", "HPV_negativ…
     ## $ `tissue:ch1`              <chr> "peripheral blood", "tumor tissue", "periphe…
 ```
-
 There is a lot of info here, but what eventually becomes clear is the
 following: - There’s lots of useful metadata here for each sample -
 There are ftp links to supplementary files (in this case, the 3 we need
@@ -244,6 +244,9 @@ We will now build a function that uses the info we can get from the
 ExpressionSet phenoData to download a few samples from this study.
 
     geo_download <- function(target_directory,geo_accession,samples_to_download) {
+
+        # Call query to GEO
+        gds <- GEOquery::getGEO(geo_accession)
 
         # Check whether the files are already present in the target_directory
         file_names <- list.files(target_directory)
@@ -270,7 +273,6 @@ ExpressionSet phenoData to download a few samples from this study.
           sub_samples_to_download <- setdiff(samples_to_download,file_names)
 
           # Identify samples from GEO
-          gds <- GEOquery::getGEO(geo_accession)
           data_use <- Biobase::phenoData(gds[[1]])@data[Biobase::phenoData(gds[[1]])@data$title %in% sub_samples_to_download,]
 
             # Create subdirectories and download from GEO
@@ -283,15 +285,14 @@ ExpressionSet phenoData to download a few samples from this study.
                 tmp_dwnload2 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[2]])
                 tmp_dwnload3 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[3]])
 
-                download.file(tmp_dwnload1,destfile=paste(dir_name,"barcodes.tsv.gz",sep="/"))
-                download.file(tmp_dwnload2,destfile=paste(dir_name,"features.tsv.gz",sep="/"))
-                download.file(tmp_dwnload3,destfile=paste(dir_name,"matrix.mtx.gz",sep="/"))
+                download.file(tmp_dwnload1,cacheOK = FALSE,destfile=paste(dir_name,"barcodes.tsv.gz",sep="/"))
+                download.file(tmp_dwnload2,cacheOK = FALSE,destfile=paste(dir_name,"features.tsv.gz",sep="/"))
+                download.file(tmp_dwnload3,cacheOK = FALSE,destfile=paste(dir_name,"matrix.mtx.gz",sep="/"))
             }
 
         } else {
 
             # Identify samples from GEO
-            gds <- GEOquery::getGEO(geo_accession)
             data_use <- Biobase::phenoData(gds[[1]])@data[Biobase::phenoData(gds[[1]])@data$title %in% samples_to_download,]
 
             # Create subdirectories and download from GEO
@@ -304,9 +305,9 @@ ExpressionSet phenoData to download a few samples from this study.
                 tmp_dwnload2 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[2]])
                 tmp_dwnload3 <- as.character(data_use[i,which(grepl("supplementary_file",colnames(data_use)))[3]])
 
-                download.file(tmp_dwnload1,destfile=paste(dir_name,"barcodes.tsv.gz",sep="/"))
-                download.file(tmp_dwnload2,destfile=paste(dir_name,"features.tsv.gz",sep="/"))
-                download.file(tmp_dwnload3,destfile=paste(dir_name,"matrix.mtx.gz",sep="/"))
+                download.file(tmp_dwnload1,cacheOK = FALSE,destfile=paste(dir_name,"barcodes.tsv.gz",sep="/"))
+                download.file(tmp_dwnload2,cacheOK = FALSE,destfile=paste(dir_name,"features.tsv.gz",sep="/"))
+                download.file(tmp_dwnload3,cacheOK = FALSE,destfile=paste(dir_name,"matrix.mtx.gz",sep="/"))
             }
           
         }
@@ -327,15 +328,30 @@ already downloaded the data!
         )
 
 ```tpl
-    ## [1] "All samples already present!"
+    ## Found 1 file(s)
+
+    ## GSE139324_series_matrix.txt.gz
+
+    ## Using locally cached version: /var/folders/1w/32zp8ffj6q50nny8nt6y1bvc0000gq/T//RtmphrBo8Y/GSE139324_series_matrix.txt.gz
+
+    ## Using locally cached version of GPL18573 found here:
+    ## /var/folders/1w/32zp8ffj6q50nny8nt6y1bvc0000gq/T//RtmphrBo8Y/GPL18573.soft.gz
 ```
     # Will tell you all samples are already here 
     geo_download(target_directory="~/Desktop/geo_download_test",
         geo_accession="GSE139324",
         samples_to_download=c("HD_PBMC_1","HD_PBMC_2","HD_PBMC_3")
         )
-
 ```tpl
+    ## Found 1 file(s)
+
+    ## GSE139324_series_matrix.txt.gz
+
+    ## Using locally cached version: /var/folders/1w/32zp8ffj6q50nny8nt6y1bvc0000gq/T//RtmphrBo8Y/GSE139324_series_matrix.txt.gz
+
+    ## Using locally cached version of GPL18573 found here:
+    ## /var/folders/1w/32zp8ffj6q50nny8nt6y1bvc0000gq/T//RtmphrBo8Y/GPL18573.soft.gz
+
     ## [1] "All samples already present!"
 ```
     # Will tell you 3 of 4 are already here
@@ -344,9 +360,17 @@ already downloaded the data!
         geo_accession="GSE139324",
         samples_to_download=c("HD_PBMC_1","HD_PBMC_2","HD_PBMC_3","HD_PBMC_4")
         )
-
 ```tpl
-    ## [1] "All samples already present!"
+    ## Found 1 file(s)
+
+    ## GSE139324_series_matrix.txt.gz
+
+    ## Using locally cached version: /var/folders/1w/32zp8ffj6q50nny8nt6y1bvc0000gq/T//RtmphrBo8Y/GSE139324_series_matrix.txt.gz
+
+    ## Using locally cached version of GPL18573 found here:
+    ## /var/folders/1w/32zp8ffj6q50nny8nt6y1bvc0000gq/T//RtmphrBo8Y/GPL18573.soft.gz
+
+    ## [1] "There are 3 of 4 already here!"
 ```
 ## Save the metadata
 
@@ -356,8 +380,8 @@ these pieces in Seurat when/if we analyze these samples.
     metadata_to_save <- gds_use[[1]]@phenoData@data %>%
       as_tibble(.,rownames="sample_accession")
 
-    # readr::write_tsv(metadata_to_save,
-    #                 file="~/Desktop/geo_download_test/GSE139324_metadata.tsv")
+    readr::write_tsv(metadata_to_save,
+                     file="~/Desktop/geo_download_test/GSE139324_metadata.tsv")
 
 ## Conclusions
 
