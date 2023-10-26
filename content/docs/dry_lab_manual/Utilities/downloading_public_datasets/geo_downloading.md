@@ -50,7 +50,7 @@ To run this tutorial, we assume the following:
 
 First, we will load the necessary packages.
 
-    ```tpl
+```tpl
     ## Loading required package: Biobase
 
     ## Loading required package: BiocGenerics
@@ -99,7 +99,7 @@ First, we will load the necessary packages.
     ## The following objects are masked from 'package:base':
     ## 
     ##     intersect, setdiff, setequal, union
-    ```
+```
 
 # Identify samples and metadata from an accession number
 
