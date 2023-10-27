@@ -1,0 +1,167 @@
+---
+title: "Creating a Seurat object with multiple samples"
+output: md_document
+date: "2023-10-27"
+---
+
+# Building more complex Seurat objects
+
+In most cases, we will want to go beyond reading one sample into Seurat and performing biological analyses. We often want to create a Seurat object that has multiple samples (e.g. biological replicates or patients). These samples will also have unique pieces of metadata, such as HPV- PBMC or HPV+ TIL from our [head and neck cancer dataset](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE139324).
+
+# Prerequisites 
+
+This analysis assumes that you have download the samples described in the GEO download tutorial under utilities. 
+
+# Load packages 
+
+First, we will load the necessary packages.
+
+```{r load_packages}
+
+library(Seurat)
+library(dplyr)
+library(patchwork) 
+
+```
+
+# Read the individual files into a list 
+
+The data I downloaded using the tutorial are located in /home/rstudio/docker_rstudio/data/geo_download. We will create a simple for loop to read all the files into individual variables stored in a list.
+
+```{r read_data}
+
+full_path <- "/home/rstudio/docker_rstudio/data/geo_download/"
+
+raw_files <- list.files(paste(full_path))
+# Not the metadata... we will use this in a second 
+raw_files <- raw_files[2:5]
+raw_files
+
+# Create list for Seurat object
+raw_list <- vector("list",length=length(raw_files))
+raw_list # empty list of length 4
+
+# Loop to read filtered feature barcode matrices into R data into R
+for (i in 1:length(raw_list)) {
+  
+  raw_list[[i]] <- Read10X(paste(full_path,raw_files[i],sep=""))
+  
+}
+
+dim(raw_list[[1]]) # 33694 genes by  2445 cells
+
+raw_list[[1]][1:50,1:10] # sparse matrix with counts 
+
+# Name each item in the list by its title
+names(raw_list) <- raw_files
+names(raw_list)
+
+```
+
+# Read in metadata 
+
+Before we construct the combined object, we will need the metadata.
+
+We can read that in from the tsv file using readr::read_tsv (readr is a package, and the "::" lets us call a function from that package without loading the package)
+
+```{r metadata}
+
+# Read in the metadata
+metadata_file <- readr::read_tsv("/home/rstudio/docker_rstudio/data/geo_download/GSE139324_metadata.tsv")
+
+# Re-name a few columns for easy use 
+colnames(metadata_file)[c(43,45)] <- c("disease_state","tissue")
+
+# Filter to only our samples of interest
+metadata_file_filtered <- metadata_file %>%
+  filter(title %in% raw_files)
+
+# Make sure the order of names matches the raw data list 
+identical(metadata_file_filtered$title,names(raw_list))
+
+# Create an empty list of Seurat objects
+ser_list <- vector("list",length=length(raw_list))
+
+# Loop to Create individual Seurat objects and include metadata 
+for (i in 1:length(ser_list)) {
+  
+  # Create Seurat Object
+  ser_list[[i]] <- CreateSeuratObject(raw_list[[i]])
+  
+  # Create metadata for each object
+  meta_add <- data.frame(matrix(data=NA,nrow=ncol(ser_list[[i]]),ncol=3))
+  colnames(meta_add) <- c("title","disease_state","tissue")
+  rownames(meta_add) <- colnames(ser_list[[i]])
+  meta_add$title <- metadata_file_filtered[i,"title"] %>% pull()
+  meta_add$disease_state <- metadata_file_filtered[i,"disease_state"] %>% pull()
+  meta_add$tissue <- metadata_file_filtered[i,"tissue"] %>% pull()
+  
+  # Add Metadata
+  ser_list[[i]] <- AddMetaData(ser_list[[i]],metadata=meta_add)
+
+}
+
+# Check out our list of Seurat objects
+ser_list
+
+```
+
+# Merge list of Seurat objects into a single seurat object 
+
+```{r merge_ser}
+
+ser_merged <- merge(ser_list[[1]],ser_list[2:4])
+
+ser_merged@meta.data$title %>%
+  table()
+
+ser_merged@meta.data %>%
+  select(title,disease_state) %>%
+  table()
+
+ser_merged@meta.data %>%
+  select(title,tissue) %>%
+  table()
+
+```
+
+# Analysis of all 4 samples 
+
+As per the shortcut in the PBMC vignette, here's a quick analysis of the 4 healthy donor samples we merged into one Seurat object.
+
+```{r analysis_workflow}
+
+ser_merged <- ser_merged %>%
+  NormalizeData() %>%
+  FindVariableFeatures() %>%
+  ScaleData() %>%
+  RunPCA()
+
+ElbowPlot(ser_merged)
+
+ser_merged <- ser_merged %>%
+  FindNeighbors(.,dims=1:15) %>%
+  FindClusters(.,res=c(0.3,0.5,0.7)) %>% 
+  RunUMAP(.,dims=1:10)
+
+```
+
+# Plot a UMAP of clusters by sample
+
+```{r plotting}
+
+DimPlot(ser_merged,group.by="RNA_snn_res.0.3",label=T)
+
+DimPlot(ser_merged,group.by="RNA_snn_res.0.3",split.by="title",label=T,
+        ncol=2)
+
+```
+
+# Save output 
+
+```{r save_results}
+
+save_path <- "/home/rstudio/docker_rstudio/data/"
+saveRDS(ser_merged,file=paste(save_path,"ser_merged_4_hd_pbmc_231027.rds",sep=""))
+
+```
