@@ -1,3 +1,7 @@
+---
+weight: 1
+---
+
 # Creating a consistent environment
 
 ## Reproducibility
