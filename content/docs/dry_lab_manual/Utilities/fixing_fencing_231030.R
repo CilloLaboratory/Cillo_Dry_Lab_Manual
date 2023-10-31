@@ -12,7 +12,7 @@ if (length(args)==0) {
 library(tidyverse)
 
 # Read in data 
-dat <- trimws(readLines(args[1]))
+dat <- readLines(args[1])
 dat_store <- dat
 
 # Remove empty lines 
@@ -25,12 +25,12 @@ i <- 1
 
 while(i<length(dat)+1) {
   
-  line_marker <- grepl("^##",dat[i])
+  line_marker <- grepl("^[ ]+##",dat[i])
   
   if(line_marker==T) {
     ind <- i+1
     while(i<length(dat)) {
-      if(grepl("^##",dat[ind])) {
+      if(grepl("^[ ]+##",dat[ind])) {
         ind <- ind+1
       } else {
         break
@@ -41,7 +41,7 @@ while(i<length(dat)+1) {
       i <- i + 1
       } else {
       new_output[i] <- trimws(paste("```tpl\n",dat[[i]],sep=""))
-      new_output[ind-1] <- trimws(paste(dat[[ind-1]],"\n```",sep=""))
+      new_output[ind-1] <- paste(dat[[ind-1]],"\n```",sep="")
       i <- ind
       }
     } else {
@@ -53,6 +53,8 @@ while(i<length(dat)+1) {
 
 new_output[is.na(new_output)] <- dat[is.na(new_output)]
 
-dat_final <- dat_store[pos_lines] <- new_output
+dat_final <- dat_store
+
+dat_final[pos_lines] <- new_output
 
 writeLines(dat_final)
