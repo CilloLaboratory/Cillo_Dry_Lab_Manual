@@ -6,7 +6,7 @@ date: "2023-10-25"
 
 # Intro to data integration
 
-A recurrent theme in -omics work is the notion of "batch effects". This term originates from the days of microarrays, when there would be slight differences in annealing times and/or affinities between runs of microarrays. "Batch effects" has now become a blanket coloquial term to generally mean anything related to a technical artifact that arises between samples or runs. The key is that it is not a true biological signal, but instead something that should be "normalized away" to allow real biological signals to shine.
+A recurrent theme in -omics work is the notion of "batch effects". This term originates from the days of microarrays, when there would be slight differences in annealing times and/or affinities between runs of microarrays. "Batch effects" has now become a blanket colloquial term to generally mean anything related to a technical artifact that arises between samples or runs. The key is that it is not a true biological signal, but instead something that should be "normalized away" to allow real biological signals to shine.
 
 Statistically, it is straightforward to control for a batch effect: if you are using a linear model, for example, you could include the "batch" as a covariate. The challenge really arises with high-dimensional approaches such as principal component analysis or visualizing data in a UMAP - often times, when batch effects are present, visualizations are distorted or largely driven by these batch effects. There are well-documented strategies for removing batch effect in microarrays or bulk RNAseq data, which we will not discuss here. 
 
@@ -14,245 +14,270 @@ For single-cell RNAseq analysis, we can use one simple approach called "data int
 
 # Prerequisites 
 
-First, we need to create a project directory and download the relevant data. 
+We will need to download some dataset from the Cillo Laboratory [tutorial_datasets](https://github.com/CilloLaboratory/tutorial_datasets) github page.
+
+If you navigate to the link, click the code button on the top right, and click "Download ZIP" it will download the whole repository including directories containing the 10X scRNAseq datasets.
+
+For this tutorial, we will be using the *PBMC_integration_datasets* directory and enclosed files. 
 
 # Load packages 
 
-First, we will load the necessary packages.
-
-```{r load_packages, echo=FALSE}
+```{r load_packages}
 
 library(Seurat)
-library(dplyr) # from the tidyverse
-library(patchwork) # for combining ggplots 
+library(dplyr)
+library(patchwork)
 
 ```
 
-# Create a Seurat object
+```{r read_data}
 
-Next, we will load the raw data and create a Seurat object from it.
+full_path <- "/home/rstudio/docker_rstudio/data/tutorial_datasets-main/PBMC_integration_datasets/"
 
-```{r load_data}
+raw_files <- list.files(paste(full_path))
 
-# Read in the data
-pbmc_data <- Read10X("~/Desktop/pbmc3k_vignette/pbmc3k/filtered_gene_bc_matrices/hg19")
+# We don't want to read in the metadata as a 10X dataset
+# Let's remove it from the raw_files
+raw_files <- raw_files[!grepl("txt",raw_files)]
+raw_files
 
-# Check out the data - it's a sparse matrix 
-pbmc_data[1:10,1:10]
+# Create list for Seurat object
+raw_list <- vector("list",length=length(raw_files))
+raw_list # empty list of length 4
 
-# Look at some specific genes 
-pbmc_data[c("CD3D", "TCL1A", "MS4A1"), 1:30]
+# Loop to read filtered feature barcode matrices into R data into R
+for (i in 1:length(raw_list)) {
+  
+  raw_list[[i]] <- Read10X(paste(full_path,raw_files[i],sep=""))
+  
+}
 
-# Create a Seurat object from the data 
-pbmc_ser <- CreateSeuratObject(counts=pbmc_data,project="pbmc3k",min.cells=3,min.features=200)
-
-# Check out the constructed Seurat object
-pbmc_ser
-
-# Metadata is automatically generated and can be viewed 
-head(pbmc_ser@meta.data)
+# Name each item in the list by its title
+names(raw_list) <- raw_files
+names(raw_list)
 
 ```
 
-# Quality control and filtering
+# Read in metadata and create Seurat objects
 
-Prior to beginning any analysis, we need to perform a quality control across the dataset.
+```{r create_ser}
 
-Commonly used criteria for QC are:
-1) Low number of unique genes per cell - low number of genes and/or counts likely means that the cell was ruptured or dying during library generation and should be removed.
-2) Percentage of genes aligning to mitochondrial reads per cell - a high frequency of mitochondrial reads per cell also indicates poor cell quality during library generation 
+# Read in the metadata
+metadata_file <- readr::read_tsv(paste(full_path,"pbmc_integration_metadata.txt",
+                                       sep=""))
 
-Any cells outside of these criteria should be excluded. 
+# Make sure the order of names matches the raw data list 
+identical(metadata_file$sample_id,names(raw_list))
 
-It's important to always use dataset specific cutoffs (rather than general cutoffs) because these values depend on the species, cell types, and sequencing depth of any given experiment. 
+# Create an empty list of Seurat objects
+ser_list <- vector("list",length=length(raw_list))
 
-Note that mitochondrial genes can be identified as starting with "MT-". 
+# Loop to Create individual Seurat objects and include metadata 
+for (i in 1:length(ser_list)) {
+  
+  # Create Seurat Object
+  ser_list[[i]] <- CreateSeuratObject(raw_list[[i]])
+  
+  # Create metadata for each object
+  meta_add <- data.frame(matrix(data=NA,
+                                nrow=ncol(ser_list[[i]]),
+                                ncol=ncol(metadata_file))
+                         )
+  colnames(meta_add) <- colnames(metadata_file)
+  rownames(meta_add) <- colnames(ser_list[[i]])
+  meta_add[,1] <- metadata_file[i,1] %>% pull()
+  meta_add[,2] <- metadata_file[i,2] %>% pull()
+  meta_add[,3] <- metadata_file[i,3] %>% pull()
+  
+  # Add Metadata
+  ser_list[[i]] <- AddMetaData(ser_list[[i]],metadata=meta_add)
+
+}
+
+# Check out our list of Seurat objects
+ser_list
+
+```
+
+# Merge list of Seurat objects into a single seurat object 
+
+```{r merge_ser}
+
+ser_merged <- merge(ser_list[[1]],ser_list[2:length(ser_list)])
+
+ser_merged@meta.data$sample_id %>%
+  table()
+
+ser_merged@meta.data %>%
+  select(sample_id,chemistry) %>%
+  table()
+
+```
+
+# QC filtering
+
+Now that we have out combined object, let's perform some filtering before we integrate.
 
 ```{r qc_filtering}
 
-# The [[ ]] operator can add columns to object metadata. This is a great place to stash QC stats
-pbmc_ser[["percent_mt"]] <- PercentageFeatureSet(pbmc_ser, pattern = "^MT-")
+ser_merged[["percent_mt"]] <- PercentageFeatureSet(ser_merged, pattern = "^MT-")
 
 # Check out metadata now
-head(pbmc_ser@meta.data)
+head(ser_merged@meta.data)
 
 # We can also plot values from metadata
-VlnPlot(pbmc_ser, features = c("nFeature_RNA", "nCount_RNA", "percent_mt"), ncol = 3)
+VlnPlot(ser_merged, features = c("nFeature_RNA", "nCount_RNA", "percent_mt"), ncol = 3)
 
-# We will filter to cells with greater than 200 genes and less than 2500 genes
-# We will also exclude cells with greater than 5% MT reads
-pbmc_ser <- subset(pbmc_ser, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent_mt < 5)
+# Filtering is often dataset specific
+# Here, we want more than 200 and less than 3000 features
+# Plus % mito < 20%
+ser_merged <- subset(ser_merged, subset = nFeature_RNA > 200 & nFeature_RNA < 3000 & percent_mt < 20)
 
-```
-
-# Normalization 
-
-```{r norm}
-
-pbmc_ser <- NormalizeData(pbmc_ser, normalization.method = "LogNormalize", scale.factor = 10000)
+# Check out the cells left 
+ser_merged@meta.data %>%
+  select(sample_id,chemistry) %>%
+  table()
 
 ```
 
-# Identify highly variable features 
+# Standard workflow
 
-```{r features}
+We will run the standard workflow first to demonstrate the chemistry specific batch effects. 
 
-pbmc_ser <- FindVariableFeatures(pbmc_ser, selection.method = "vst", nfeatures = 2000)
+```{r standard}
 
-# Identify the 10 most highly variable genes
-top10 <- head(VariableFeatures(pbmc_ser), 10)
+# Store the filtered and un-manipulated dataset
+ser_merged_save <- ser_merged
 
-# plot variable features with and without labels
-plot1 <- VariableFeaturePlot(pbmc_ser)
-plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
-plot1 / plot2
-
-```
-
-## Scale data and reduce dimensionality 
-
-```{r scale_dim_red}
-
-pbmc_ser <- ScaleData(pbmc_ser)
-
-pbmc_ser <- RunPCA(pbmc_ser, features = VariableFeatures(object = pbmc_ser))
-
-```
-
-## Check out reduced dimensions in PCA space 
-
-```{r dim_red_explore}
-
-print(pbmc_ser[["pca"]], dims = 1:5, nfeatures = 5)
-
-VizDimLoadings(pbmc_ser, dims = 1:2, reduction = "pca")
-
-DimPlot(pbmc_ser, reduction = "pca")
-
-DimHeatmap(pbmc_ser, dims = 1, cells = 500, balanced = TRUE)
-
-ElbowPlot(pbmc_ser)
-
-```
-
-## Cluster cells 
-
-```{r cluster}
-
-pbmc_ser <- FindNeighbors(pbmc_ser, dims = 1:7)
-pbmc_ser <- FindClusters(pbmc_ser, resolution = c(0.3,0.5,0.7))
-
-dplyr::glimpse(pbmc_ser@meta.data)
-
-Idents(pbmc_ser) <- "RNA_snn_res.0.3"
-
-```
-
-## Create UMAP for visualization 
-
-```{r umap}
-
-# If you haven't installed UMAP, you can do so via reticulate::py_install(packages = 'umap-learn')
-
-pbmc_ser <- RunUMAP(pbmc_ser, dims = 1:7)
-
-DimPlot(pbmc_ser, reduction = "umap",label=T)
-
-```
-
-## Evaluating differentially expressed genes 
-
-```{r degs}
-
-# find all markers of cluster 2
-cluster2_markers <- FindMarkers(pbmc_ser, ident.1 = 2, min.pct = 0.25)
-head(cluster2_markers, n = 5)
-
-# find all markers distinguishing cluster 5 from clusters 0 and 3
-cluster5_markers <- FindMarkers(pbmc_ser, ident.1 = 5, ident.2 = c(0, 3), min.pct = 0.25)
-head(cluster5_markers, n = 5)
-
-# find markers for every cluster compared to all remaining cells, report only the positive ones
-pbmc_markers <- FindAllMarkers(pbmc_ser, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
-pbmc_markers %>%
-    group_by(cluster) %>%
-    slice_max(n = 2, order_by = avg_log2FC)
-
-# Heatmap of top DEGs across clusters 
-pbmc_markers %>%
-    group_by(cluster) %>%
-    top_n(n = 10, wt = avg_log2FC) -> top10
-
-pbmc_ser <- ScaleData(pbmc_ser,features=top10$gene)
-
-DoHeatmap(pbmc_ser, features = top10$gene) + NoLegend()
-
-```
-
-## Identify cell types 
-
-```{r cell_types}
-
-FeaturePlot(pbmc_ser, features = c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A", "FCGR3A", "LYZ", "PPBP","CD8A"))
-
-pbmc_meta <- pbmc_ser@meta.data %>%
-    mutate(cell_types=RNA_snn_res.0.3) %>%
-    mutate(cell_types=recode(cell_types,
-        `0` = "Naive CD4 Tconv",
-        `1` = "CD14 monocytes",
-        `2` = "Mem CD4 Tconv",
-        `3` = "B cells",
-        `4` = "CD8 T cells",
-        `5` = "CD16 monocytes",
-        `6` = "NK cells",
-        `7` = "DCs",
-        `8` = "Platelets"
-        )
-    )
-
-pbmc_meta %>%
-    select(RNA_snn_res.0.3,cell_types) %>%
-    table()
-
-pbmc_ser[["cell_types"]] <- pbmc_meta$cell_types
-
-DimPlot(pbmc_ser, group.by="cell_types", reduction = "umap", label = TRUE, pt.size = 0.5) + NoLegend()
-
-```
-
-## Shortcuts
-
-With the use of piping, we could have down much of this analysis in a few lines of code, as shown below. 
-
-```{r piping}
-
-pbmc_ser_quick <- CreateSeuratObject(counts=pbmc_data,project="pbmc3k",min.cells=3,min.features=200) 
-pbmc_ser_quick[["percent_mt"]] <- PercentageFeatureSet(pbmc_ser_quick, pattern = "^MT-")
-
-pbmc_ser_quick <- pbmc_ser_quick %>% 
-    subset(., subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent_mt < 5) %>%
+ser_merged <- ser_merged %>% 
     NormalizeData(.) %>%
     FindVariableFeatures(.) %>%
     ScaleData(.) %>%
     RunPCA(.) 
 
-ElbowPlot(pbmc_ser_quick)
+ElbowPlot(ser_merged)
 
-pbmc_ser_quick <- pbmc_ser_quick %>%
-    RunUMAP(.,dims=1:7) %>%
-    FindNeighbors(.,dims=1:7) %>%
+ser_merged <- ser_merged %>%
+    RunUMAP(.,dims=1:10) %>%
+    FindNeighbors(.,dims=1:10) %>%
     FindClusters(.,res=c(0.3,0.5,0.7))
 
-Idents(pbmc_ser_quick) <- "RNA_snn_res.0.3"
+Idents(ser_merged) <- "RNA_snn_res.0.3"
 
-DimPlot(pbmc_ser_quick,group.by="RNA_snn_res.0.3",label=T)
+DimPlot(ser_merged,group.by="chemistry",label=T)
+
+DimPlot(ser_merged,group.by="RNA_snn_res.0.3",split.by="chemistry",label=T)
+
+# Check out chemistry-specific clusters
+ser_merged@meta.data %>%
+  select(RNA_snn_res.0.3,chemistry) %>%
+  table()
 
 ```
 
-## Saving data 
+# Batch effects
+
+Clearly, there are strong batch effects associated with the chemistry used to generated the data. Let's look at how we can correct these batch effects by integrating the datasets. 
+
+We will use the SCTransform and rpca approaches described by the Satija Lab in Seurat. More info on integration approaches is available [here](https://satijalab.org/seurat/articles/integration_rpca#modifying-the-strength-of-integration-1).
+
+```{r integration}
+
+ser_merged_split <- SplitObject(ser_merged, split.by = "chemistry")
+
+# lapply applies the FUN (function) to each member of the list and returns a list
+ser_merged_split <- lapply(X = ser_merged_split, FUN = SCTransform, method = "glmGamPoi")
+
+# Identify the conserved features for integration 
+features <- SelectIntegrationFeatures(object.list = ser_merged_split, 
+                                      nfeatures = 2000
+                                      )
+
+# Prepare for integration 
+ser_merged_split <- PrepSCTIntegration(object.list = ser_merged_split, anchor.features = features)
+ser_merged_split <- lapply(X = ser_merged_split, FUN = RunPCA, features = features)
+
+# Find anchors and integrate
+anchors_to_use <- FindIntegrationAnchors(object.list = ser_merged_split,
+                                         normalization.method = "SCT",
+                                         anchor.features = features,
+                                         dims = 1:30, 
+                                         reduction = "rpca",
+                                         k.anchor = 20)
+
+ser_integrated <- IntegrateData(anchorset = anchors_to_use, 
+                                normalization.method = "SCT", 
+                                dims = 1:30)
+
+```
+
+# Run PCA, UMAP and clustering on integrated data 
+
+```{r integrated}
+
+ser_integrated <- RunPCA(ser_integrated,verbose = FALSE)
+
+ElbowPlot(ser_integrated)
+
+ser_integrated <- RunUMAP(ser_integrated, reduction = "pca", dims = 1:10) %>%
+  FindNeighbors(.,dims=1:10) %>%
+  FindClusters(.,res=c(0.3,0.5,0.7))
+
+```
+
+# Visualize integrated data 
+
+```{r int_viz}
+
+colnames(ser_integrated@meta.data)
+# Notice the clustering results now have the preface "integrated"
+# Instead of RNA 
+
+# A new assay is present called "integrated"
+ser_integrated
+ser_integrated@assays
+
+# View by chemistry and clusters
+DimPlot(ser_integrated,group.by="chemistry")
+
+DimPlot(ser_integrated,group.by="integrated_snn_res.0.3")
+
+# View chemistry across clusters - much better 
+ser_integrated@meta.data %>%
+  select(integrated_snn_res.0.3,chemistry) %>%
+  table()
+
+```
+
+# Identifying DEGs
+
+Now that we have integrated the datasets, we can look for differentially expressed genes across the clusters.
+
+It's important to now switch back to the RNA assay. We do not want to use only the 2000 highly variable genes contained in the integrated assay to find differentially expressed genes. 
+
+```{r degs}
+
+DefaultAssay(ser_integrated) <- "RNA"
+Idents(ser_integrated) <- "integrated_snn_res.0.3"
+
+# Using logfc.thresold at 0.5 to speed this up 
+all_degs <- FindAllMarkers(ser_integrated,logfc.threshold = 0.5)
+
+all_degs %>%
+  group_by(cluster) %>%
+  top_n(5,avg_log2FC) %>%
+  arrange(desc(avg_log2FC))
+
+```
+
+# Conclusions 
+
+We have now walked through a method to integrate two datasets that have a known batch effect like chemistry. In practice, a batch effect can be anything from a patient specific sample to differences in how data was generated or differences in sequencing depth between samples.
+
+# Saving data 
 
 ```{r saving}
 
-# saveRDS(pbmc_ser,file="pbmc3k_vignette_final_output_231024.rds")
+# saveRDS(ser_integrated,file=paste(full_path,"PBMC_integration_final_output_231024.rds",sep=""))
 
 ```
