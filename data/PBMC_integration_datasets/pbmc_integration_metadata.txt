@@ -1,5 +1,0 @@
-sample_id	sample_type	chemistry
-HD_PBMC_1	PBMC	3prime
-HD_PBMC_1_5prime	PBMC	5prime
-HD_PBMC_2	PBMC	3prime
-HD_PBMC_2_5prime	PBMC	5prime
