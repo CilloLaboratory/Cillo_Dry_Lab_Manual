@@ -3,49 +3,68 @@ weight: 3
 ---
 
 # Building more complex Seurat objects
+
 In most cases, we will want to go beyond reading one sample into Seurat
 and performing biological analyses. We often want to create a Seurat
 object that has multiple samples (e.g. biological replicates or
 patients). These samples will also have unique pieces of metadata, such
 as HPV- PBMC or HPV+ TIL from our [head and neck cancer
 dataset](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE139324).
+
 # Prerequisites
+
 This analysis assumes that you have download the samples described in
 the GEO download tutorial under utilities.
+
 # Load packages
+
 First, we will load the necessary packages.
+
     library(Seurat)
+
 ```tpl
     ## Attaching SeuratObject
 ```
+
     library(dplyr)
+
 ```tpl
-    ## 
+    ##
     ## Attaching package: 'dplyr'
+
     ## The following objects are masked from 'package:stats':
     ## 
     ##     filter, lag
+
     ## The following objects are masked from 'package:base':
     ## 
     ##     intersect, setdiff, setequal, union
 ```
+
     library(patchwork) 
+
 # Read the individual files into a list
+
 The data I downloaded using the tutorial are located in
 /home/rstudio/docker\_rstudio/data/geo\_download. We will create a
 simple for loop to read all the files into individual variables stored
 in a list.
+
     full_path <- "/home/rstudio/docker_rstudio/data/geo_download/"
+
     raw_files <- list.files(paste(full_path))
     # Not the metadata... we will use this in a second 
     raw_files <- raw_files[2:5]
     raw_files
+
 ```tpl
     ## [1] "HD_PBMC_1" "HD_PBMC_2" "HD_PBMC_3" "HD_PBMC_4"
 ```
+
     # Create list for Seurat object
     raw_list <- vector("list",length=length(raw_files))
     raw_list # empty list of length 4
+
 ```tpl
     ## [[1]]
     ## NULL
@@ -59,20 +78,27 @@ in a list.
     ## [[4]]
     ## NULL
 ```
+
     # Loop to read filtered feature barcode matrices into R data into R
     for (i in 1:length(raw_list)) {
       
       raw_list[[i]] <- Read10X(paste(full_path,raw_files[i],sep=""))
       
     }
+
     dim(raw_list[[1]]) # 33694 genes by  2445 cells
+
 ```tpl
     ## [1] 33694  2445
 ```
+
     raw_list[[1]][1:50,1:10] # sparse matrix with counts 
+
 ```tpl
     ## 50 x 10 sparse Matrix of class "dgCMatrix"
+
     ##   [[ suppressing 10 column names 'AAACCTGCACAGACTT-1', 'AAACCTGCATCGGTTA-1', 'AAACCTGTCAAGCCTA-1' ... ]]
+
     ##                                  
     ## RP11-34P13.3  . . . . . . . . . .
     ## FAM138A       . . . . . . . . . .
@@ -125,19 +151,26 @@ in a list.
     ## RP5-902P8.12  . . . . . . . . . .
     ## UBE2J2        . . . . . . . . . .
 ```
+
     # Name each item in the list by its title
     names(raw_list) <- raw_files
     names(raw_list)
+
 ```tpl
     ## [1] "HD_PBMC_1" "HD_PBMC_2" "HD_PBMC_3" "HD_PBMC_4"
 ```
+
 # Read in metadata
+
 Before we construct the combined object, we will need the metadata.
+
 We can read that in from the tsv file using readr::read\_tsv (readr is a
 package, and the “::” lets us call a function from that package without
 loading the package)
+
     # Read in the metadata
     metadata_file <- readr::read_tsv("/home/rstudio/docker_rstudio/data/geo_download/GSE139324_metadata.tsv")
+
 ```tpl
     ## Rows: 63 Columns: 45
     ## ── Column specification ────────────────────────────────────────────────────────
@@ -148,18 +181,24 @@ loading the package)
     ## ℹ Use `spec()` to retrieve the full column specification for this data.
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
 ```
+
     # Re-name a few columns for easy use 
     colnames(metadata_file)[c(43,45)] <- c("disease_state","tissue")
+
     # Filter to only our samples of interest
     metadata_file_filtered <- metadata_file %>%
       filter(title %in% raw_files)
+
     # Make sure the order of names matches the raw data list 
     identical(metadata_file_filtered$title,names(raw_list))
+
 ```tpl
     ## [1] TRUE
 ```
+
     # Create an empty list of Seurat objects
     ser_list <- vector("list",length=length(raw_list))
+
     # Loop to Create individual Seurat objects and include metadata 
     for (i in 1:length(ser_list)) {
       
@@ -176,19 +215,26 @@ loading the package)
       
       # Add Metadata
       ser_list[[i]] <- AddMetaData(ser_list[[i]],metadata=meta_add)
+
     }
+
 ```tpl
     ## Warning: Feature names cannot have underscores ('_'), replacing with dashes
     ## ('-')
+
     ## Warning: Feature names cannot have underscores ('_'), replacing with dashes
     ## ('-')
+
     ## Warning: Feature names cannot have underscores ('_'), replacing with dashes
     ## ('-')
+
     ## Warning: Feature names cannot have underscores ('_'), replacing with dashes
     ## ('-')
 ```
+
     # Check out our list of Seurat objects
     ser_list
+
 ```tpl
     ## [[1]]
     ## An object of class Seurat 
@@ -210,22 +256,29 @@ loading the package)
     ## 33694 features across 2315 samples within 1 assay 
     ## Active assay: RNA (33694 features, 0 variable features)
 ```
+
 # Merge list of Seurat objects into a single seurat object
+
     ser_merged <- merge(ser_list[[1]],ser_list[2:4])
+
 ```tpl
     ## Warning in CheckDuplicateCellNames(object.list = objects): Some cell names are
     ## duplicated across objects provided. Renaming to enforce unique cell names.
 ```
+
     ser_merged@meta.data$title %>%
       table()
+
 ```tpl
     ## .
     ## HD_PBMC_1 HD_PBMC_2 HD_PBMC_3 HD_PBMC_4 
     ##      2445      2436      1767      2315
 ```
+
     ser_merged@meta.data %>%
       select(title,disease_state) %>%
       table()
+
 ```tpl
     ##            disease_state
     ## title       Healthy donor
@@ -234,9 +287,11 @@ loading the package)
     ##   HD_PBMC_3          1767
     ##   HD_PBMC_4          2315
 ```
+
     ser_merged@meta.data %>%
       select(title,tissue) %>%
       table()
+
 ```tpl
     ##            tissue
     ## title       peripheral blood
@@ -245,16 +300,21 @@ loading the package)
     ##   HD_PBMC_3             1767
     ##   HD_PBMC_4             2315
 ```
+
 # Analysis of all 4 samples
+
 As per the shortcut in the PBMC vignette, here’s a quick analysis of the
 4 healthy donor samples we merged into one Seurat object.
+
     ser_merged <- ser_merged %>%
       NormalizeData() %>%
       FindVariableFeatures() %>%
       ScaleData() %>%
       RunPCA()
+
 ```tpl
     ## Centering and scaling data matrix
+
     ## PC_ 1 
     ## Positive:  RPS29, IL32, TRAC, LTB, RPS18, TRBC2, IL7R, RPS12, TRBC1, RPS2 
     ##     EEF1A1, CCR7, CD247, CD69, PEBP1, TRAT1, GZMM, MYC, AQP3, TSHZ2 
@@ -291,15 +351,21 @@ As per the shortcut in the PBMC vignette, here’s a quick analysis of the
     ##     DERL3, SCT, PTCRA, SMPD3, C1orf186, JCHAIN, LINC00996, SCN9A, IL3RA, LILRB4 
     ##     PTPRS, CCDC50, RP11-117D22.2, MZB1, UGCG, RP11-73G16.2, DNASE1L3, LAMP5, MAP1A, TNFRSF21
 ```
+
     ElbowPlot(ser_merged)
-![](combining_samples_tutorial_files/figure-markdown_strict/analysis_workflow-1.png)
+
+![](/analysis_workflow-1.png)
+
     ser_merged <- ser_merged %>%
       FindNeighbors(.,dims=1:15) %>%
       FindClusters(.,res=c(0.3,0.5,0.7)) %>% 
       RunUMAP(.,dims=1:10)
+
 ```tpl
     ## Computing nearest neighbor graph
+
     ## Computing SNN
+
     ## Modularity Optimizer version 1.3.0 by Ludo Waltman and Nees Jan van Eck
     ## 
     ## Number of nodes: 8963
@@ -327,15 +393,23 @@ As per the shortcut in the PBMC vignette, here’s a quick analysis of the
     ## Maximum modularity in 10 random starts: 0.8883
     ## Number of communities: 17
     ## Elapsed time: 0 seconds
+
     ## Warning: The default method for RunUMAP has changed from calling Python UMAP via reticulate to the R-native UWOT using the cosine metric
     ## To use Python UMAP via reticulate, set umap.method to 'umap-learn' and metric to 'correlation'
     ## This message will be shown once per session
+
     ## 19:09:30 UMAP embedding parameters a = 0.9922 b = 1.112
+
     ## 19:09:30 Read 8963 rows and found 10 numeric columns
+
     ## 19:09:30 Using Annoy for neighbor search, n_neighbors = 30
+
     ## 19:09:30 Building Annoy index with metric = cosine, n_trees = 50
+
     ## 0%   10   20   30   40   50   60   70   80   90   100%
+
     ## [----|----|----|----|----|----|----|----|----|----|
+
     ## **************************************************|
     ## 19:09:30 Writing NN index file to temp file /tmp/RtmpZYOKxd/file44aa2cf3936a
     ## 19:09:30 Searching Annoy index using 1 thread, search_k = 3000
@@ -345,12 +419,19 @@ As per the shortcut in the PBMC vignette, here’s a quick analysis of the
     ## 19:09:33 Commencing optimization for 500 epochs, with 368458 positive edges
     ## 19:09:38 Optimization finished
 ```
+
 # Plot a UMAP of clusters by sample
+
     DimPlot(ser_merged,group.by="RNA_snn_res.0.3",label=T)
-![](combining_samples_tutorial_files/figure-markdown_strict/plotting-1.png)
+
+![](/plotting-1.png)
+
     DimPlot(ser_merged,group.by="RNA_snn_res.0.3",split.by="title",label=T,
             ncol=2)
-![](combining_samples_tutorial_files/figure-markdown_strict/plotting-2.png)
+
+![](/plotting-2.png)
+
 # Save output
+
     save_path <- "/home/rstudio/docker_rstudio/data/"
     saveRDS(ser_merged,file=paste(save_path,"ser_merged_4_hd_pbmc_231027.rds",sep=""))
