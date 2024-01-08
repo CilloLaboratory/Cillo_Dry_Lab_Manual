@@ -1,6 +1,6 @@
 ---
 weight: 2
-hidden: true
+bookHidden: true
 ---
 
 {{< columns >}}
