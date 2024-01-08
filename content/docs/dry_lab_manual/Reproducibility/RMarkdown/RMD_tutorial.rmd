@@ -89,7 +89,7 @@ mpg %>%
 
 ```{r saving}
 
-saveRDS(cars,file=here("mpg_data.rds"))
+saveRDS(mpg,file=here("mpg_data.rds"))
 
 ```
 

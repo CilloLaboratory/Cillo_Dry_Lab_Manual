@@ -133,7 +133,7 @@ the code used to create it will be hidden.
 
 # Save output
 
-    saveRDS(cars,file=here("mpg_data.rds"))
+    saveRDS(mpg,file=here("mpg_data.rds"))
 
 # Knitting the document
 
