@@ -45,7 +45,7 @@ with RMarkdown.
 Once you have created a new R Markdown document, you will have a
 template to get started that looks like this:
 
-\*\* insert template \*\*
+![](/rmd_template.png)
 
 # Front matter
 
@@ -121,7 +121,7 @@ Here, we’re just creating a plot in a code block.
       geom_point() +
       theme_bw()
 
-![](rmd_tutorial_md_files/figure-markdown_strict/plot_1-1.png)
+![](/plot_1-1.png)
 
 # Create a plot
 
@@ -129,7 +129,7 @@ We’re going to create another plot, but use the echo=FALSE feature when
 defining the code chunk. This means that only the plot will appear and
 the code used to create it will be hidden.
 
-![](rmd_tutorial_md_files/figure-markdown_strict/plot_2-1.png)
+![](/plot_2-1.png)
 
 # Save output
 
