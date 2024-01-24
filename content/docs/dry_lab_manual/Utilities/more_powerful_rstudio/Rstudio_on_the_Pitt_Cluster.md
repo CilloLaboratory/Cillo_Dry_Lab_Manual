@@ -93,8 +93,9 @@ Analysis can now proceed as if we were using our local version of Rstudio. The n
 
 Whenever we are finished with our analysis on the HTC, we can shut everything down with these steps: 
 
-Power down Rstudio session in the browser
+- Power down Rstudio session in the browser
     - DO NOT save session .RData info when prompted
-Close the window
-CTL+C to kill the SSH 
-scancel to kill the resources
+- Close the window
+- CTL+C to kill the SSH 
+- scancel (using the job number provided in the slurm outfile) to kill the resources
+    - This is only required if there is still time remaining on your sbatch job
